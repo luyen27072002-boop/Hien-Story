@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#17151f" />
+  <title>Hiền Story</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:wght@600;700;800;900&family=Quicksand:wght@400;500;600;700;800&family=Source+Serif+4:wght@400;500;600;700;800&family=Lora:wght@400;500;600;700&family=Literata:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Merriweather:wght@400;700&family=Noto+Serif:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Parisienne&family=Pacifico&family=Caveat:wght@400;500;600;700&family=Mali:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Literata:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- UI_ONLY_AUTH_UNTOUCHED: app.js giữ nguyên từ file đăng nhập được. -->
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-mark">H</div>
+        <div>
+          <h1>Hiền Story</h1>
+          <p>Viết truyện nhẹ nhàng, lưu bài gọn gàng</p>
+        </div>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTab" type="button">Đăng nhập</button>
+        <button class="auth-tab" id="registerTab" type="button">Tạo tài khoản</button>
+      </div>
+
+      <form id="loginForm" class="auth-form active">
+        <label>
+          Tên đăng nhập hoặc email
+          <input id="loginIdentity" autocomplete="username" placeholder="vd: tacgia01" required />
+        </label>
+        <label>
+          Mật khẩu
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required />
+        </label>
+        <label class="check-row">
+          <input id="rememberLogin" type="checkbox" checked />
+          <span>Giữ đăng nhập cho lần sau</span>
+        </label>
+        <button class="primary-btn full-btn" type="submit">Đăng nhập</button>
+      </form>
+
+      <form id="registerForm" class="auth-form">
+        <label>
+          Tên hiển thị
+          <input id="registerDisplayName" autocomplete="name" placeholder="Tên tác giả" required />
+        </label>
+        <label>
+          Tên đăng nhập
+          <input id="registerUsername" autocomplete="username" placeholder="Không dấu, không khoảng trắng" required />
+        </label>
+        <label>
+          Email
+          <input id="registerEmail" type="email" autocomplete="email" placeholder="email@example.com" required />
+        </label>
+        <label>
+          Mật khẩu
+          <input id="registerPassword" type="password" autocomplete="new-password" placeholder="Ít nhất 6 ký tự" required />
+        </label>
+        <button class="primary-btn full-btn" type="submit">Tạo tài khoản</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" id="menuBtn" aria-label="Mở menu">☰</button>
+      <div class="brand" data-route="home">
+        <div class="brand-mark">H</div>
+        <div>
+          <h1>Hiền Story</h1>
+          <p>Không gian viết truyện của bạn</p>
+        </div>
+      </div>
+      <div class="user-pill">
+        <span id="currentUserName">User</span>
+        <button class="ghost-btn small-btn" id="logoutBtn" type="button">Đăng xuất</button>
+      </div>
+      <div class="top-actions">
+        <select class="font-select" id="fontSelect" aria-label="Chọn kiểu chữ">
+          <option value="soft">Chữ mềm</option>
+          <option value="modern">Hiện đại</option>
+          <option value="classic">Tiểu thuyết</option>
+          <option value="cute">Dễ thương</option>
+        </select>
+        <button class="ghost-btn" id="themeBtn" type="button">Sáng/Tối</button>
+        <button class="primary-btn" id="installBtn" type="button" hidden>Cài app</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <nav>
+          <button class="nav-item active" data-route="home">Trang đọc</button>
+          <button class="nav-item" data-route="editor">Viết truyện</button>
+          <button class="nav-item" data-route="drafts">Bản nháp</button>
+          <button class="nav-item" data-route="published">Đã đăng</button>
+          <button class="nav-item" data-route="account">Tài khoản</button>
+          <button class="nav-item" data-route="backup">Sao lưu</button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <section class="view active" id="homeView">
+          <div class="home-top-search"></div>
+          <div class="hero hero-soul">
+            <div class="hero-copy-wrap">
+              <h2>Góc nhỏ tâm hồn</h2>
+              <div class="hero-actions">
+                <button class="primary-btn" data-route="editor">Viết truyện mới</button>
+                <button class="ghost-btn" data-route="drafts">Xem bản nháp</button>
+              </div>
+              <div class="hero-mini-stats">
+                <div><b id="statAll">0</b><span>Tổng bài</span></div>
+                <div><b id="statDraft">0</b><span>Nháp</span></div>
+                <div><b id="statPublished">0</b><span>Đăng</span></div>
+              </div>
+            </div>
+            <div class="hero-scene-card">
+              <img src="assets/soul-corner-hero.png" alt="Góc nhỏ bình yên" />
+            </div>
+          </div>
+
+          <div class="section-head">
+            <div>
+              <h3>Truyện đã đăng</h3>
+              
+            </div>
+            <input id="searchInput" class="search" placeholder="Tìm tiêu đề, tag, nội dung..." />
+          </div>
+          <div id="publishedList" class="story-grid"></div>
+        </section>
+
+        <section class="view" id="editorView">
+          <div class="editor-shell">
+            <div class="editor-head">
+              <div>
+                <h2 id="editorTitle">Viết truyện mới</h2>
+                <p id="saveState">Chưa có thay đổi</p>
+              </div>
+              <div class="editor-actions">
+                <button class="ghost-btn" id="newStoryBtn" type="button">Bài mới</button>
+                <button class="ghost-btn danger" id="deleteStoryBtn" type="button">Xóa</button>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                Tiêu đề
+                <input id="titleInput" placeholder="Tên truyện..." />
+              </label>
+              <label>
+                Tác giả
+                <input id="authorInput" placeholder="Tên tác giả..." />
+              </label>
+              <label>
+                Thể loại
+                <select id="categoryInput">
+                  <option value="Tự do">Tự do</option>
+                  <option value="Tình cảm">Tình cảm</option>
+                  <option value="Hành động">Hành động</option>
+                  <option value="Viễn tưởng">Viễn tưởng</option>
+                  <option value="Kinh dị">Kinh dị</option>
+                  <option value="Hài">Hài</option>
+                  <option value="Đời thường">Đời thường</option>
+                </select>
+              </label>
+              <label>
+                Tag
+                <input id="tagsInput" placeholder="vd: học đường, robot, fantasy" />
+              </label>
+            </div>
+
+            
+            <div class="compact-studio-shell">
+              <div class="writer-toolbar word-ribbon" id="writerToolbar">
+                <div class="writer-tool-group compact-group">
+                  <span>Ảnh</span>
+                  <button class="writer-tool-btn" id="pickCoverBtn" type="button">Thêm bìa</button>
+                  <button class="writer-tool-btn" id="clearCoverBtn" type="button">Xóa bìa</button>
+                  <input id="coverInput" type="file" accept="image/*" hidden />
+                </div>
+
+                <div class="writer-tool-group compact-group">
+                  <span>Canh lề</span>
+                  <button class="writer-tool-btn active" type="button" data-exec="justifyLeft" title="Căn trái">Trái</button>
+                  <button class="writer-tool-btn" type="button" data-exec="justifyCenter" title="Căn giữa">Giữa</button>
+                  <button class="writer-tool-btn" type="button" data-exec="justifyRight" title="Căn phải">Phải</button>
+                  <button class="writer-tool-btn" type="button" data-exec="justifyFull" title="Căn đều">Đều</button>
+                </div>
+
+                <div class="writer-tool-group compact-group">
+                  <span>Chữ</span>
+                  <button class="writer-tool-btn icon-btn" type="button" data-exec="bold" title="Đậm"><b>B</b></button>
+                  <button class="writer-tool-btn icon-btn" type="button" data-exec="italic" title="Nghiêng"><i>I</i></button>
+                  <button class="writer-tool-btn icon-btn" type="button" data-exec="underline" title="Gạch chân"><u>U</u></button>
+                </div>
+
+                <div class="writer-tool-group compact-group">
+                  <span>Cỡ chữ</span>
+                  <select id="editorSizeSelect" class="writer-tool-select">
+                    <option value="12">12</option>
+                    <option value="14">14</option>
+                    <option value="16">16</option>
+                    <option value="18" selected>18</option>
+                    <option value="20">20</option>
+                    <option value="22">22</option>
+                    <option value="24">24</option>
+                    <option value="26">26</option>
+                    <option value="28">28</option>
+                    <option value="32">32</option>
+                    <option value="36">36</option>
+                    <option value="42">42</option>
+                    <option value="48">48</option>
+                  </select>
+                </div>
+
+                <div class="writer-tool-group compact-group">
+                  <span>Giãn dòng</span>
+                  <select id="editorLineHeightSelect" class="writer-tool-select">
+                    <option value="1.00">1.0</option>
+                    <option value="1.15">1.15</option>
+                    <option value="1.30">1.3</option>
+                    <option value="1.50" selected>1.5</option>
+                    <option value="1.65">1.65</option>
+                    <option value="1.80">1.8</option>
+                    <option value="2.00">2.0</option>
+                    <option value="2.20">2.2</option>
+                    <option value="2.50">2.5</option>
+                    <option value="3.00">3.0</option>
+                  </select>
+                </div>
+
+                <div class="writer-tool-group compact-group">
+                  <span>Font</span>
+                  <select id="editorFontFamilySelect" class="writer-tool-select">
+                    <option value="literata" selected>Literata - truyện</option>
+                    <option value="lora">Lora - mềm</option>
+                    <option value="serif">Source Serif - sách</option>
+                    <option value="noto">Noto Serif - rõ</option>
+                    <option value="dancing">Dancing Script - viết tay</option>
+                    <option value="greatvibes">Great Vibes - thư pháp</option>
+                    <option value="parisienne">Parisienne - chữ ký</option>
+                    <option value="caveat">Caveat - nhật ký</option>
+                    <option value="mali">Mali - cute</option>
+                    <option value="pacifico">Pacifico - nổi bật</option>
+                    <option value="elegant">Cormorant - cổ điển</option>
+                  </select>
+                </div>
+
+                <div class="writer-tool-group compact-group">
+                  <span>Nền</span>
+                  <select id="pageBgSelect" class="writer-tool-select">
+                    <option value="rose" selected>Hồng nhẹ</option>
+                    <option value="cream">Giấy kem</option>
+                    <option value="garden">Vườn xanh</option>
+                    <option value="dream">Tím mơ</option>
+                    <option value="vintage">Vintage giấy</option>
+                    <option value="blossom">Hoa lá nhẹ</option>
+                    <option value="forest">Chill xanh lá</option>
+                    <option value="lilac">Tím mộng</option>
+                    <option value="diary">Nhật ký</option>
+                  </select>
+                </div>
+
+                <div class="writer-tool-group compact-group">
+                  <span>Đoạn</span>
+                  <button class="writer-tool-btn" id="insertParagraphBtn" type="button">Xuống dòng</button>
+                  <button class="writer-tool-btn" id="insertIndentBtn" type="button">Thụt đầu dòng</button>
+                </div>
+
+                <div class="writer-tool-group compact-group compact-right">
+                  <span>Xem</span>
+                  <button class="writer-tool-btn" id="openPreviewBtn" type="button">Preview</button>
+                  <button class="writer-tool-btn" id="exportPdfBtn" type="button">Xuất PDF</button>
+                </div>
+              </div>
+
+              <div class="chapter-strip-shell">
+                <div id="chapterList" class="chapter-pill-list"></div>
+                <button class="writer-tool-btn add-chapter-btn" id="addChapterBtn" type="button">+ Chương</button>
+              </div>
+
+              <div class="editor-stage-full">
+                <div class="paper-top">
+                  <span>Bản thảo</span>
+                  <span id="activeChapterLabel">Chương 1</span>
+                </div>
+                <div id="coverBadge" class="cover-badge hidden">Đã thêm ảnh bìa</div>
+                <div id="richEditor" class="rich-editor rich-editor-full" contenteditable="true" data-placeholder="Bắt đầu viết truyện ở đây..."></div>
+                <label class="textarea-label hidden-textarea">
+                  Nội dung
+                  <textarea id="contentInput" placeholder="Bắt đầu viết truyện ở đây..."></textarea>
+                </label>
+              </div>
+            </div>
+
+            <div class="writer-footer">
+              <div class="counter">
+                <span id="wordCount">0 từ</span>
+                <span id="charCount">0 ký tự</span>
+              </div>
+              <div class="publish-actions">
+                <button class="ghost-btn" id="saveDraftBtn" type="button">Lưu nháp</button>
+                <button class="primary-btn" id="publishBtn" type="button">Đăng bài</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="draftsView">
+          <div class="section-head">
+            <div>
+              <h2>Bản nháp</h2>
+              <p>Những truyện đang viết dở, có thể sửa tiếp bất cứ lúc nào.</p>
+            </div>
+          </div>
+          <div id="draftList" class="story-list"></div>
+        </section>
+
+        <section class="view" id="publishedView">
+          <div class="section-head">
+            <div>
+              <h2>Đã đăng</h2>
+              <p>Những bài đã publish trong tài khoản hiện tại.</p>
+            </div>
+          </div>
+          <div id="publishedManageList" class="story-list"></div>
+        </section>
+
+        <section class="view" id="accountView">
+          <div class="backup-panel">
+            <h2>Tài khoản</h2>
+            <p>Thông tin tài khoản hiện tại trên trình duyệt này.</p>
+            <div class="account-box">
+              <div>
+                <span>Tên hiển thị</span>
+                <strong id="accountDisplayName"></strong>
+              </div>
+              <div>
+                <span>Tên đăng nhập</span>
+                <strong id="accountUsername"></strong>
+              </div>
+              <div>
+                <span>Email</span>
+                <strong id="accountEmail"></strong>
+              </div>
+            </div>
+            <div class="backup-actions">
+              <button class="ghost-btn danger" id="logoutBtn2" type="button">Đăng xuất tài khoản</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="backupView">
+          <div class="backup-panel">
+            <h2>Sao lưu dữ liệu</h2>
+            <p>Xuất file để giữ bản sao truyện, hoặc nhập lại khi cần chuyển dữ liệu.</p>
+            <div class="backup-actions">
+              <button class="primary-btn" id="exportBtn" type="button">Xuất file JSON</button>
+              <label class="file-btn">
+                Nhập file JSON
+                <input id="importInput" type="file" accept="application/json" />
+              </label>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="bottom-item active" data-route="home">Đọc</button>
+      <button class="bottom-item" data-route="editor">Viết</button>
+      <button class="bottom-item" data-route="drafts">Nháp</button>
+      <button class="bottom-item" data-route="published">Đăng</button>
+    </nav>
+
+    <dialog id="readerDialog" class="reader-dialog">
+      <article class="reader">
+        <div class="reader-top">
+          <button class="ghost-btn" id="closeReaderBtn" type="button">Đóng</button>
+          <div class="reader-controls">
+            <button class="ghost-btn" id="fontMinusBtn" type="button">A-</button>
+            <button class="ghost-btn" id="fontPlusBtn" type="button">A+</button>
+          </div>
+        </div>
+        <div class="reader-meta">
+          <span id="readerCategory"></span>
+          <span id="readerDate"></span>
+        </div>
+        <h2 id="readerTitle"></h2>
+        <p id="readerAuthor"></p>
+        <div id="readerContent" class="reader-content"></div>
+      </article>
+    </dialog>
+
+    <dialog id="previewDialog" class="preview-dialog">
+      <article class="preview-reader">
+        <div class="reader-top">
+          <button class="ghost-btn" id="closePreviewBtn" type="button">Đóng</button>
+          <button class="primary-btn" id="previewPdfBtn" type="button">Xuất PDF</button>
+        </div>
+        <div id="previewReaderBody" class="preview-reader-body"></div>
+      </article>
+    </dialog>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="writer-ui-addon.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "Hiền Story - Viết truyện",
+  "short_name": "Hiền Story",
+  "description": "Web app viết truyện, đăng nhập, lưu bản nháp, đăng bài và đọc truyện.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff7fa",
+  "theme_color": "#df6392",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
