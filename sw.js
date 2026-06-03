@@ -1,4 +1,4 @@
-const CACHE_NAME = "hien-story-green-update-v2";
+const CACHE_NAME = "hien-story-spacefix-v3";
 const ASSETS = [
   "./",
   "./index.html",
