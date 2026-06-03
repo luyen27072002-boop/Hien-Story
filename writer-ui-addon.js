@@ -18,6 +18,13 @@
     chapters: [],
     chapterId: null,
   };
+
+  /*
+    FIX RELOAD TỰ THÊM BẢN NHÁP:
+    Khi đang init/load/fresh nội bộ, không dispatch input sang app chính.
+  */
+  let suppressStorySync = false;
+
   const backgroundPalette = [
     "rose",
     "cream",
@@ -29,6 +36,7 @@
     "lilac",
     "diary",
   ];
+
   const fontMap = {
     literata: '"Literata", "Source Serif 4", serif',
     lora: '"Lora", "Source Serif 4", serif',
@@ -48,6 +56,7 @@
   function uid(prefix = "id") {
     return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
   }
+
   function escapeHtml(text = "") {
     return String(text).replace(
       /[&<>"']/g,
@@ -61,6 +70,7 @@
         })[m],
     );
   }
+
   function readJson(key, fallback) {
     try {
       const v = JSON.parse(localStorage.getItem(key) || "null");
@@ -69,9 +79,11 @@
       return fallback;
     }
   }
+
   function writeJson(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
   }
+
   function getExtras() {
     for (const key of EXTRA_KEYS) {
       const val = readJson(key, null);
@@ -79,9 +91,11 @@
     }
     return {};
   }
+
   function saveExtras(v) {
     writeJson(SAVE_KEY, v);
   }
+
   function getSession() {
     try {
       return JSON.parse(
@@ -93,16 +107,19 @@
       return null;
     }
   }
+
   function currentStoriesKey() {
     const s = getSession();
     return s?.userId ? `story_desk_stories_${s.userId}_v2` : null;
   }
+
   function readStories() {
     const key = currentStoriesKey();
     if (!key) return [];
     const v = readJson(key, []);
     return Array.isArray(v) ? v : [];
   }
+
   function normalizeText(html) {
     const div = document.createElement("div");
     div.innerHTML = html || "";
@@ -110,9 +127,11 @@
       .replace(/\u00A0/g, " ")
       .trim();
   }
+
   function makeChapter(name = "Chương 1", html = "") {
     return { id: uid("chap"), title: name, html };
   }
+
   function prefs() {
     return {
       fontFamily: "literata",
@@ -125,9 +144,11 @@
       ...readJson(PREF_KEY, {}),
     };
   }
+
   function savePrefs(part) {
     writeJson(PREF_KEY, { ...prefs(), ...part });
   }
+
   function e() {
     return {
       searchHolder: $(".home-top-search"),
@@ -166,13 +187,23 @@
   function applyPrefs() {
     const els = e();
     const p = prefs();
-    if (els.editorFontFamilySelect)
+
+    if (els.editorFontFamilySelect) {
       els.editorFontFamilySelect.value = p.fontFamily;
-    if (els.editorSizeSelect) els.editorSizeSelect.value = p.fontSize;
-    if (els.editorLineHeightSelect)
+    }
+
+    if (els.editorSizeSelect) {
+      els.editorSizeSelect.value = p.fontSize;
+    }
+
+    if (els.editorLineHeightSelect) {
       els.editorLineHeightSelect.value = p.lineHeight;
-    if (els.pageBgSelect)
+    }
+
+    if (els.pageBgSelect) {
       els.pageBgSelect.value = state.pageBg || p.pageBg || "rose";
+    }
+
     if (els.richEditor) {
       els.richEditor.dataset.pageBg = state.pageBg || p.pageBg || "rose";
     }
@@ -181,8 +212,9 @@
       const cmd = btn.dataset.exec;
       if (cmd === "bold") btn.classList.toggle("active", Boolean(p.bold));
       if (cmd === "italic") btn.classList.toggle("active", Boolean(p.italic));
-      if (cmd === "underline")
+      if (cmd === "underline") {
         btn.classList.toggle("active", Boolean(p.underline));
+      }
     });
   }
 
@@ -197,26 +229,42 @@
       els.searchInput.placeholder = "Tìm tiêu đề, nội dung...";
     }
   }
+
   function renderCoverBadge() {
     const els = e();
     if (!els.coverBadge) return;
     els.coverBadge.classList.toggle("hidden", !state.cover);
   }
+
   function setCover(dataUrl = "") {
     state.cover = dataUrl || "";
     renderCoverBadge();
   }
+
   function saveCurrentChapter() {
     const els = e();
     if (!els.richEditor || !state.chapterId) return;
+
     const ch = state.chapters.find((x) => x.id === state.chapterId);
     if (!ch) return;
+
     ch.html = els.richEditor.innerHTML || "";
-    syncTextarea();
+
+    /*
+      Quan trọng:
+      Không syncTextarea trong lúc init/load/fresh nội bộ.
+      Nếu sync lúc reload, contentInput bị dispatch input,
+      app chính có thể tự tạo thêm một bản nháp mới.
+    */
+    if (!suppressStorySync) {
+      syncTextarea();
+    }
   }
+
   function syncTextarea() {
     const els = e();
     if (!els.contentInput) return;
+
     const txt = state.chapters
       .map(
         (ch, idx) =>
@@ -224,6 +272,7 @@
       )
       .join("\n\n")
       .trim();
+
     els.contentInput.value = txt;
     els.contentInput.dispatchEvent(new Event("input", { bubbles: true }));
   }
@@ -231,6 +280,7 @@
   function renderChapterPills() {
     const els = e();
     if (!els.chapterList) return;
+
     els.chapterList.innerHTML = state.chapters
       .map(
         (ch, idx) =>
@@ -238,62 +288,97 @@
       )
       .join("");
   }
-  function activateChapter(id) {
-    saveCurrentChapter();
+
+  function activateChapter(id, options = {}) {
+    /*
+      Khi user chuyển chương thật sự thì lưu chương hiện tại.
+      Khi init/load/fresh thì skipSave=true để tránh tự tạo draft.
+    */
+    if (!options.skipSave) {
+      saveCurrentChapter();
+    }
+
     state.chapterId = id;
+
     const ch = state.chapters.find((x) => x.id === id);
     const els = e();
+
     if (!ch || !els.richEditor) return;
+
     els.richEditor.innerHTML = ch.html || "";
-    if (els.activeChapterLabel)
+
+    if (els.activeChapterLabel) {
       els.activeChapterLabel.textContent = ch.title || "Chương";
+    }
+
     renderChapterPills();
     applyPrefs();
   }
+
   function addChapter() {
     saveCurrentChapter();
+
     const ch = makeChapter(`Chương ${state.chapters.length + 1}`, "");
     state.chapters.push(ch);
+
     activateChapter(ch.id);
   }
+
   function renameChapter(id) {
     const ch = state.chapters.find((x) => x.id === id);
     if (!ch) return;
+
     const next = (prompt("Đổi tên chương", ch.title || "") || "").trim();
     if (!next) return;
+
     ch.title = next;
     renderChapterPills();
+
     const els = e();
-    if (id === state.chapterId && els.activeChapterLabel)
+    if (id === state.chapterId && els.activeChapterLabel) {
       els.activeChapterLabel.textContent = next;
+    }
   }
+
   function deleteChapter(id) {
     if (state.chapters.length <= 1) {
       state.chapters = [makeChapter("Chương 1", "")];
       state.chapterId = state.chapters[0].id;
-      return activateChapter(state.chapterId);
+      return activateChapter(state.chapterId, { skipSave: true });
     }
+
     state.chapters = state.chapters.filter((x) => x.id !== id);
     activateChapter(state.chapters[0].id);
   }
 
   function freshStoryState() {
+    suppressStorySync = true;
+
     state.storyId = null;
     state.cover = "";
     state.pageBg = prefs().pageBg || "rose";
     state.chapters = [makeChapter("Chương 1", "")];
     state.chapterId = state.chapters[0].id;
+
     renderCoverBadge();
     renderChapterPills();
-    activateChapter(state.chapterId);
+    activateChapter(state.chapterId, { skipSave: true });
+
+    suppressStorySync = false;
   }
+
   function getExtra(id) {
     return id ? getExtras()[id] || null : null;
   }
+
   function loadExtra(id) {
     const els = e();
+
+    suppressStorySync = true;
+
     state.storyId = id || null;
     const extra = getExtra(id);
+
     if (extra) {
       state.cover = extra.cover || "";
       state.pageBg = extra.pageBg || prefs().pageBg || "rose";
@@ -316,22 +401,29 @@
         ),
       ];
     }
+
     state.chapterId = state.chapters[0].id;
+
     renderCoverBadge();
     renderChapterPills();
-    activateChapter(state.chapterId);
+    activateChapter(state.chapterId, { skipSave: true });
+
+    suppressStorySync = false;
   }
 
   function persistExtra(snapshot = null) {
     saveCurrentChapter();
+
     const els = e();
     let id = state.storyId;
     const stories = readStories();
+
     if (!id || !stories.some((s) => s.id === id)) {
       if (snapshot?.beforeIds) {
         const newer = stories.find((s) => !snapshot.beforeIds.has(s.id));
         if (newer) id = newer.id;
       }
+
       if (!id) {
         const title = els.titleInput?.value?.trim();
         const sorted = stories
@@ -341,13 +433,18 @@
               new Date(b.updatedAt || b.publishedAt || 0) -
               new Date(a.updatedAt || a.publishedAt || 0),
           );
+
         const found = title ? sorted.find((s) => s.title === title) : sorted[0];
         id = found?.id || null;
       }
+
       state.storyId = id;
     }
+
     if (!id) return;
+
     const extras = getExtras();
+
     extras[id] = {
       cover: state.cover || "",
       pageBg: state.pageBg || "rose",
@@ -358,6 +455,7 @@
       })),
       updatedAt: new Date().toISOString(),
     };
+
     saveExtras(extras);
     setTimeout(enhanceStoryLists, 120);
   }
@@ -367,6 +465,7 @@
     tmp.innerHTML = html || "";
     return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
   }
+
   function pickChapterBg(idx, baseBg) {
     const palette = [
       "vintage",
@@ -382,6 +481,7 @@
     const start = Math.max(0, palette.indexOf(baseBg));
     return palette[(start + idx) % palette.length] || baseBg || "rose";
   }
+
   function firstExcerpt() {
     const chapter = state.chapters.find((ch) =>
       stripHtml(ch.html || "").trim(),
@@ -390,12 +490,15 @@
     if (!text) return "Một câu chuyện dịu dàng đang chờ được viết tiếp...";
     return text.slice(0, 220) + (text.length > 220 ? "..." : "");
   }
+
   function makePageNumber(n) {
     return `<div class="page-number">${String(n).padStart(2, "0")}</div>`;
   }
+
   function previewPagesHtml() {
     const els = e();
     const p = prefs();
+
     const title = (els.titleInput?.value || "").trim() || "Chưa đặt tên";
     const author = (els.authorInput?.value || "").trim() || "Ẩn danh";
     const category = els.categoryInput?.value || "Tự do";
@@ -404,8 +507,10 @@
       .map((t) => t.trim())
       .filter(Boolean)
       .slice(0, 5);
+
     const coverBg = state.pageBg || p.pageBg || "rose";
     let pageNo = 1;
+
     const coverPage = `
       <section class="preview-page page-bg-${coverBg} preview-cover-page deluxe-cover">
         <div class="cover-glow"></div>
@@ -416,16 +521,27 @@
             <p class="cover-kicker">Hiền Story</p>
             <h2>${escapeHtml(title)}</h2>
             <p class="cover-author">Tác giả: ${escapeHtml(author)}</p>
-            ${tags.length ? `<div class="story-extra-meta">${tags.map((t) => `<span class="story-extra-pill">#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
+            ${
+              tags.length
+                ? `<div class="story-extra-meta">${tags
+                    .map(
+                      (t) =>
+                        `<span class="story-extra-pill">#${escapeHtml(t)}</span>`,
+                    )
+                    .join("")}</div>`
+                : ""
+            }
           </div>
         </div>
       </section>`;
+
     const chapters = state.chapters
       .map((ch, idx) => {
         const bg = pickChapterBg ? pickChapterBg(idx + 1, coverBg) : coverBg;
         const content =
           ch.html && ch.html.trim() ? ch.html : "<p>Chưa có nội dung.</p>";
         const chapterLabel = ch.title || `Chương ${idx + 1}`;
+
         const section = `
         <section class="preview-page page-bg-${bg} chapter-page deluxe-chapter-page">
           <div class="chapter-top-decor"></div>
@@ -436,19 +552,27 @@
           <div class="chapter-body">${content}</div>
           ${makePageNumber ? makePageNumber(pageNo + idx + 1) : ""}
         </section>`;
+
         return section;
       })
       .join("");
+
     return `<div class="preview-pages deluxe-pages">${coverPage}${chapters}</div>`;
   }
+
   function openPreview() {
     persistExtra();
+
     const els = e();
-    if (els.previewReaderBody)
+    if (els.previewReaderBody) {
       els.previewReaderBody.innerHTML = previewPagesHtml();
-    if (typeof els.previewDialog?.showModal === "function")
+    }
+
+    if (typeof els.previewDialog?.showModal === "function") {
       els.previewDialog.showModal();
+    }
   }
+
   function exportPdf() {
     persistExtra();
 
@@ -633,6 +757,7 @@
             linear-gradient(180deg, rgba(252,247,236,.99), rgba(245,235,212,.99)),
             repeating-linear-gradient(0deg, rgba(161,125,75,.06) 0, rgba(161,125,75,.06) 1px, transparent 1px, transparent 28px) !important;
         }
+
         #pdfPrintArea .page-bg-blossom {
           background:
             radial-gradient(circle at 10% 18%, rgba(255,231,239,.95), transparent 18%),
@@ -640,24 +765,28 @@
             radial-gradient(circle at 86% 84%, rgba(255,245,213,.78), transparent 16%),
             linear-gradient(180deg, rgba(255,251,252,.98), rgba(248,255,248,.98)) !important;
         }
+
         #pdfPrintArea .page-bg-forest {
           background:
             radial-gradient(circle at 14% 10%, rgba(233,247,229,.88), transparent 18%),
             radial-gradient(circle at 86% 16%, rgba(198,232,210,.75), transparent 18%),
             linear-gradient(180deg, rgba(247,252,245,.98), rgba(229,240,228,.98)) !important;
         }
+
         #pdfPrintArea .page-bg-lilac {
           background:
             radial-gradient(circle at 15% 14%, rgba(246,230,255,.9), transparent 18%),
             radial-gradient(circle at 86% 18%, rgba(226,233,255,.82), transparent 18%),
             linear-gradient(180deg, rgba(252,248,255,.98), rgba(241,236,251,.98)) !important;
         }
+
         #pdfPrintArea .page-bg-diary {
           background:
             linear-gradient(180deg, rgba(255,251,244,.99), rgba(255,248,239,.99)),
             repeating-linear-gradient(0deg, transparent 0, transparent 30px, rgba(220,176,189,.34) 30px, rgba(220,176,189,.34) 31px),
             linear-gradient(90deg, transparent 0, transparent 42px, rgba(114,166,224,.26) 42px, rgba(114,166,224,.26) 43px) !important;
         }
+
         #pdfPrintArea .page-number {
           position: absolute !important;
           right: 18mm !important;
@@ -673,15 +802,29 @@
           font-size: 10pt !important;
           font-weight: 800 !important;
         }
-        #pdfPrintArea .cover-kicker { letter-spacing: .28em !important; text-transform: uppercase !important; color: #b87392 !important; font-size: 10pt !important; margin: 0 !important; }
-        #pdfPrintArea .cover-author { color: #8c6c79 !important; font-size: 12pt !important; margin: 0 !important; }
-        #pdfPrintArea .chapter-no { display:block !important; letter-spacing:.24em !important; color:#c07b97 !important; font-size:10pt !important; font-weight:800 !important; margin-bottom: 6pt !important; }
-        #pdfPrintArea .intro-grid { display:grid !important; gap:14mm !important; align-content:center !important; min-height:100% !important; }
-        #pdfPrintArea .intro-label { text-transform: uppercase !important; letter-spacing: .24em !important; color:#c07b97 !important; font-size:10pt !important; font-weight:800 !important; margin:0 0 8pt !important; }
-        #pdfPrintArea .intro-quote { font-size:14pt !important; line-height:1.8 !important; color:#4f3943 !important; font-style: italic !important; }
-        #pdfPrintArea .intro-meta-card { display:grid !important; gap: 10pt !important; background: rgba(255,255,255,.55) !important; border:1px solid rgba(223,99,146,.18) !important; border-radius: 18px !important; padding: 14pt !important; }
-        #pdfPrintArea .intro-meta-card div { display:flex !important; justify-content:space-between !important; gap: 12pt !important; border-bottom:1px dashed rgba(190,129,155,.25) !important; padding-bottom: 6pt !important; }
-        #pdfPrintArea .intro-meta-card div:last-child { border-bottom:0 !important; }
+
+        #pdfPrintArea .cover-kicker {
+          letter-spacing: .28em !important;
+          text-transform: uppercase !important;
+          color: #b87392 !important;
+          font-size: 10pt !important;
+          margin: 0 !important;
+        }
+
+        #pdfPrintArea .cover-author {
+          color: #8c6c79 !important;
+          font-size: 12pt !important;
+          margin: 0 !important;
+        }
+
+        #pdfPrintArea .chapter-no {
+          display:block !important;
+          letter-spacing:.24em !important;
+          color:#c07b97 !important;
+          font-size:10pt !important;
+          font-weight:800 !important;
+          margin-bottom: 6pt !important;
+        }
       }
     `;
 
@@ -706,23 +849,33 @@
     const els = e();
     const extra = getExtra(id);
     if (!extra || !els.readerContent) return;
+
     const bg = extra.pageBg || "rose";
-    const title = ($("#readerTitle")?.textContent || "").trim();
+
     const chapters = (extra.chapters || [])
       .map(
         (ch, idx) =>
           `<section class="preview-page page-bg-${bg}"><div class="chapter-head"><h3>${escapeHtml(ch.title || `Chương ${idx + 1}`)}</h3></div><div class="chapter-body">${ch.html || "<p>Chưa có nội dung.</p>"}</div></section>`,
       )
       .join("");
-    els.readerContent.innerHTML = `${extra.cover ? `<img class="preview-cover" src="${extra.cover}" alt="Bìa truyện" />` : ""}${chapters}`;
+
+    els.readerContent.innerHTML = `${
+      extra.cover
+        ? `<img class="preview-cover" src="${extra.cover}" alt="Bìa truyện" />`
+        : ""
+    }${chapters}`;
   }
+
   function enhanceStoryLists() {
     const extras = getExtras();
+
     $$("[data-read], [data-edit]").forEach((btn) => {
       const card = btn.closest(".story-card, .story-row");
       const id = btn.dataset.read || btn.dataset.edit;
       if (!card || !id) return;
+
       const extra = extras[id];
+
       let meta = card.querySelector(".story-extra-meta");
       if (!meta) {
         meta = document.createElement("div");
@@ -730,15 +883,23 @@
         const p = card.querySelector("p");
         if (p) p.insertAdjacentElement("afterend", meta);
       }
+
       const parts = [];
-      if (extra?.cover)
+
+      if (extra?.cover) {
         parts.push('<span class="story-extra-pill">Có bìa</span>');
-      if (extra?.chapters?.length)
+      }
+
+      if (extra?.chapters?.length) {
         parts.push(
           `<span class="story-extra-pill">${extra.chapters.length} chương</span>`,
         );
-      if (extra?.pageBg)
+      }
+
+      if (extra?.pageBg) {
         parts.push(`<span class="story-extra-pill">Nền ${extra.pageBg}</span>`);
+      }
+
       meta.innerHTML = parts.join("");
     });
   }
@@ -763,65 +924,19 @@
     return els.richEditor.contains(sel.anchorNode);
   }
 
-  function makeStyledFragment(text) {
-    const frag = document.createDocumentFragment();
-    let lastNode = null;
-    const parts = String(text).split("\n");
-
-    parts.forEach((part, index) => {
-      if (index > 0) {
-        const br = document.createElement("br");
-        frag.appendChild(br);
-        lastNode = br;
-      }
-
-      if (part.length || parts.length === 1) {
-        const span = document.createElement("span");
-        span.setAttribute("style", activeInlineCss());
-        span.textContent = part;
-        frag.appendChild(span);
-        lastNode = span;
-      }
-    });
-
-    return { frag, lastNode };
-  }
-
-  function insertStyledText(text) {
-    const els = e();
-    const sel = window.getSelection();
-    if (!els.richEditor || !sel || !sel.rangeCount || !selectionInsideEditor())
-      return false;
-
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-
-    const { frag, lastNode } = makeStyledFragment(text);
-    range.insertNode(frag);
-
-    if (lastNode) {
-      const nextRange = document.createRange();
-      nextRange.setStartAfter(lastNode);
-      nextRange.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(nextRange);
-    }
-
-    saveCurrentChapter();
-    return true;
-  }
-
   function applyInlineStyleToSelection() {
     const els = e();
     const sel = window.getSelection();
+
     if (
       !els.richEditor ||
       !sel ||
       !sel.rangeCount ||
       sel.isCollapsed ||
       !selectionInsideEditor()
-    )
+    ) {
       return false;
+    }
 
     const range = sel.getRangeAt(0);
     const span = document.createElement("span");
@@ -838,6 +953,7 @@
     const nextRange = document.createRange();
     nextRange.selectNodeContents(span);
     nextRange.collapse(false);
+
     sel.removeAllRanges();
     sel.addRange(nextRange);
 
@@ -864,11 +980,13 @@
     els.coverInput?.addEventListener("change", () => {
       const file = els.coverInput.files?.[0];
       if (!file) return;
+
       const fr = new FileReader();
       fr.onload = () => {
         setCover(String(fr.result || ""));
         persistExtra();
       };
+
       fr.readAsDataURL(file);
     });
 
@@ -891,16 +1009,16 @@
     });
 
     /*
-    FIX DẤU CÁCH:
-    Không chặn beforeinput nữa.
-    Để trình duyệt tự gõ chữ, tự xử lý dấu cách, tiếng Việt, IME.
-  */
+      FIX DẤU CÁCH:
+      Không chặn beforeinput nữa.
+      Để trình duyệt tự gõ chữ, tự xử lý dấu cách, tiếng Việt, IME.
+    */
     els.richEditor?.addEventListener("input", saveCurrentChapter);
 
     /*
-    Toolbar dùng lệnh native của trình duyệt.
-    B / I / U / căn trái / giữa / phải / đều sẽ ổn định hơn.
-  */
+      Toolbar dùng lệnh native của trình duyệt.
+      B / I / U / căn trái / giữa / phải / đều ổn định hơn.
+    */
     $$("[data-exec]").forEach((btn) =>
       btn.addEventListener("click", () => {
         const cmd = btn.dataset.exec;
@@ -922,11 +1040,6 @@
       saveCurrentChapter();
     });
 
-    /*
-    Font / cỡ chữ / giãn dòng:
-    Nếu bôi đen chữ thì áp dụng cho phần bôi đen.
-    Không chặn phím gõ mới nữa để tránh lỗi dấu cách.
-  */
     els.editorSizeSelect?.addEventListener("change", () => {
       savePrefs({ fontSize: els.editorSizeSelect.value });
       applyPrefs();
@@ -976,8 +1089,10 @@
 
     els.deleteStoryBtn?.addEventListener("click", () => {
       const removeId = state.storyId;
+
       setTimeout(() => {
         if (!removeId) return;
+
         const extras = getExtras();
         delete extras[removeId];
         saveExtras(extras);
@@ -993,12 +1108,37 @@
         const editId = ev.target.closest("[data-edit]")?.dataset.edit;
         const route = ev.target.closest("[data-route]")?.dataset.route;
 
-        if (readId) setTimeout(() => renderReaderFromExtra(readId), 120);
-        if (editId) setTimeout(() => loadExtra(editId), 120);
-        if (route === "editor" && !editId)
-          setTimeout(() => freshStoryState(), 110);
-        if (["home", "drafts", "published"].includes(route || ""))
+        if (readId) {
+          setTimeout(() => renderReaderFromExtra(readId), 120);
+        }
+
+        if (editId) {
+          setTimeout(() => loadExtra(editId), 120);
+        }
+
+        if (route === "editor" && !editId) {
+          setTimeout(() => {
+            const els = e();
+
+            const hasAnyInput =
+              (els.titleInput?.value || "").trim() ||
+              (els.authorInput?.value || "").trim() ||
+              (els.contentInput?.value || "").trim() ||
+              normalizeText(els.richEditor?.innerHTML || "");
+
+            /*
+              Chỉ tạo editor mới khi form thật sự trống.
+              Không tự tạo trạng thái mới khi reload/quay lại trang.
+            */
+            if (!hasAnyInput) {
+              freshStoryState();
+            }
+          }, 110);
+        }
+
+        if (["home", "drafts", "published"].includes(route || "")) {
           setTimeout(enhanceStoryLists, 180);
+        }
       },
       true,
     );
@@ -1007,13 +1147,26 @@
   function init() {
     moveSearch();
     state.pageBg = prefs().pageBg || "rose";
+
+    /*
+      FIX RELOAD TỰ THÊM BẢN NHÁP:
+      Không dispatch input trong lúc init.
+      Vẫn dựng editor trống để UI hoạt động bình thường,
+      nhưng không báo cho app chính rằng user vừa viết.
+    */
+    suppressStorySync = true;
     applyPrefs();
     bind();
     freshStoryState();
+    suppressStorySync = false;
+
     enhanceStoryLists();
     setTimeout(enhanceStoryLists, 400);
   }
-  if (document.readyState === "loading")
+
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
-  else init();
+  } else {
+    init();
+  }
 })();
