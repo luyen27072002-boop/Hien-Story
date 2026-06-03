@@ -36,7 +36,7 @@
       href="icons/favicon-64.png"
     />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=draftfix1" />
+    <link rel="stylesheet" href="style.css?v=draftfix3" />
   </head>
   <body>
     <!-- UI_ONLY_AUTH_UNTOUCHED: app.js giữ nguyên từ file đăng nhập được. -->
@@ -646,8 +646,24 @@
 
       <div id="toast" class="toast"></div>
     </div>
+    <script>
+      (async function clearOldPwaCache() {
+        try {
+          if ("serviceWorker" in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map((reg) => reg.unregister()));
+          }
 
-    <script src="app.js?v=draftfix1"></script>
-    <script src="writer-ui-addon.js?v=draftfix1"></script>
+          if ("caches" in window) {
+            const names = await caches.keys();
+            await Promise.all(names.map((name) => caches.delete(name)));
+          }
+        } catch (err) {
+          console.warn("Clear old cache failed:", err);
+        }
+      })();
+    </script>
+    <script src="app.js?v=draftfix3"></script>
+    <script src="writer-ui-addon.js?v=draftfix3"></script>
   </body>
 </html>
